@@ -222,3 +222,109 @@ security:
 由[laungcisin](https://github.com/laungcisin)提供`SsoAuthorizationServerConfig`自动授权配置`autoApprove(true)`
 ## update2018年04月19日
 添加`docker-compose`启动方式，需在本地host文件中添加`127.0.0.1 sso-login sso-taobao sso-tmall sso-resource`.访问地址为：[http://sso-taobao:8083/client1](http://sso-taobao:8083/client1)
+
+
+## Pipeline
+
+#!groovy
+pipeline{
+	agent any
+	//定义仓库地址
+	environment {
+		REPOSITORY="https://github.com/LetItGrow/sso-merryyou.git"
+	}
+
+	stages {
+
+		stage('获取代码'){
+			steps {
+				echo "start fetch code from git:${REPOSITORY}"
+				//清空当前目录
+				deleteDir()
+				//拉去代码
+				git "${REPOSITORY}"
+			}
+		}
+
+		stage('代码静态检查'){
+			steps {
+				//伪代码检查
+				echo "start code check"
+			}
+		}
+
+		stage('编译+单元测试'){
+			steps {
+				echo "start compile"
+				//切换目录
+                dir("sso-client1") {
+                    echo "start compile sso-client1 "
+                    //重新打包
+                    bat "mvn.cmd -Dmaven.test.skip=true -U clean install"
+                }
+                dir("sso-client2") {
+                    echo "start compile sso-client2 "
+                    //重新打包
+                    bat "mvn.cmd -Dmaven.test.skip=true -U clean install"
+                }
+                dir("sso-resource") {
+                    echo "start compile sso-resource "
+                    //重新打包
+                    bat "mvn.cmd -Dmaven.test.skip=true -U clean install"
+                }
+                dir("sso-server") {
+                    echo "start compile sso-server "
+                    //重新打包
+                    bat "mvn.cmd -Dmaven.test.skip=true -U clean install"
+                }
+			}
+		}
+
+		stage('构建镜像'){
+			steps {
+				echo "start build image"
+				dir('sso-server') {
+                    //build镜像
+                    bat 'docker build -t 192.168.99.1:8082/longfeizheng/sso-server:1.0 .'
+                    //登录163云仓库
+                    bat 'docker login -u admin -p admin123 192.168.99.1:8082'
+                    //推送镜像到163仓库
+                    bat 'docker push 192.168.99.1:8082/longfeizheng/sso-server:1.0'
+                }
+                dir('sso-client1') {
+                    //build镜像
+                    bat 'docker build -t 192.168.99.1:8082/longfeizheng/sso-client1:1.0 .'
+                    //登录163云仓库
+                    bat 'docker login -u admin -p admin123 192.168.99.1:8082'
+                    //推送镜像到163仓库
+                    bat 'docker push 192.168.99.1:8082/longfeizheng/sso-client1:1.0'
+                }
+                dir('sso-client2') {
+                    //build镜像
+                    bat 'docker build -t 192.168.99.1:8082/longfeizheng/sso-client2:1.0 .'
+                    //登录163云仓库
+                    bat 'docker login -u admin -p admin123 192.168.99.1:8082'
+                    //推送镜像到163仓库
+                    bat 'docker push 192.168.99.1:8082/longfeizheng/sso-client2:1.0'
+                }
+                dir('sso-resource') {
+                    //build镜像
+                    bat 'docker build -t 192.168.99.1:8082/longfeizheng/sso-resource:1.0 .'
+                    //登录163云仓库
+                    bat 'docker login -u admin -p admin123 192.168.99.1:8082'
+                    //推送镜像到163仓库
+                    bat 'docker push 192.168.99.1:8082/longfeizheng/sso-resource:1.0'
+                }
+			}
+		}
+
+		stage('启动服务'){
+			steps {
+				echo "start sso-merryyou"
+				//重启服务
+				bat 'docker-compose up -d --build'
+			}
+		}
+
+	}
+}
