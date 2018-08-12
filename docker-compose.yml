@@ -1,28 +1,28 @@
 version: '3'
 services:
   sso-login:
-   image: 192.168.99.1:8083/longfeizheng/sso-server:1.0
+   image: 192.168.99.1:8082/longfeizheng/sso-server:1.0
    restart: always
    ports:
      - "8087:8087"
 #   command:
 #    - "--server.port=8082"
   sso-taobao:
-    image: 192.168.99.1:8083/longfeizheng/sso-client1:1.0
+    image: 192.168.99.1:8082/longfeizheng/sso-client1:1.0
     restart: always
     ports:
       - 8084:8084
     links:
       - sso-login
   sso-tmall:
-    image: 192.168.99.1:8083/longfeizheng/sso-client2:1.0
+    image: 192.168.99.1:8082/longfeizheng/sso-client2:1.0
     restart: always
     ports:
       - 8085:8085
     links:
       - sso-login
   sso-resource:
-    image: 192.168.99.1:8083/longfeizheng/sso-resource:1.0
+    image: 192.168.99.1:8082/longfeizheng/sso-resource:1.0
     restart: always
     ports:
       - 8086:8086
